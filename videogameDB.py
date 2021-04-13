@@ -1,3 +1,21 @@
+import mysql.connector
+
+cnx = mysql.connector.connect(user='root', password='blue5555',
+                              host='127.0.0.1',
+                              database='videogameDB')
+
+mycursor = cnx.cursor()
+'''
+creates table
+mycursor.execute("CREATE TABLE customers (name VARCHAR(255), address VARCHAR(255))")
+'''
+
+#Print all available tables
+mycursor.execute("SHOW TABLES")
+
+for x in mycursor:
+  print(x)
+
 from tkinter import Tk,Button,Label,Scrollbar,Listbox,StringVar,DoubleVar,IntVar,Entry,W,E,N,S,END
 from tkinter import ttk
 from tkinter import messagebox
