@@ -60,6 +60,13 @@ class VideogameDB:
         self.con.commit()
         messagebox.showinfo(title="Video Game Pro", message="New customer added to database")
 
+    def insertBank(self,CID, bankName, accountNumber):
+        sql = (f"INSERT INTO bank (cid, bank, account) VALUES ('{CID}', '{bankName}','{accountNumber}');")
+        print(sql)
+        self.cursor.execute(sql)
+        self.con.commit()
+        messagebox.showinfo(title="Video Game Pro", message="New bank account added to database")
+
     def update(self, gid, title, platform, price, quantity):
         tsql = 'UPDATE games SET title = %s, platform = %s, price = %f, quantity = %d WHERE gid = %%d'
         self.cursor.execute(tsql, [title,platform,price,quantity,gid])
@@ -103,6 +110,16 @@ def add_game():
 
 def reg_submit(username, password, fName, lName, address, city, state, zip, phone, email):
     db.insertReg(username, password, fName,lName, address, city, state, zip, phone, email)
+    # list_box.delete(0, 'end')
+    # list_box.insert('end', (title_text.get(), platform_combo.get(), price_text.get(), q_text.get()))
+    # title_input.delete(0, 'end')
+    # platform_combo.set('')
+    # price_input.delete(0, 'end')
+    # q_input.delete(0, 'end')
+    cnx.commit()
+
+def bank_insert(CID, bankName, accountNumber):
+    db.insertBank(CID, bankName, accountNumber)
     # list_box.delete(0, 'end')
     # list_box.insert('end', (title_text.get(), platform_combo.get(), price_text.get(), q_text.get()))
     # title_input.delete(0, 'end')
@@ -244,11 +261,8 @@ def openBank(CID):
 
 
 
-    submit_btn = Button(win2, text="Submit", bg="blue", fg="white", font="helvetica 10 bold",
-                        command=lambda: reg_submit(username_text.get(), password_text.get(), fName_text.get(),
-                                                   lName_text.get(), address_text.get(), city_text.get(),
-                                                   state_combo.get(), zip_text.get(), phone_text.get(),
-                                                   email_text.get()))
+    submit_btn = Button(win2, text="Submit", bg="blue", fg="white", font="helvetica 10 bold", command=lambda: bank_insert(int(CID), bankName_text.get(), accountNumber_text.get()))
+
     submit_btn.grid(row=4, column=1)
 
 
