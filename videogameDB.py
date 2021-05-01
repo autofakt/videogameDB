@@ -18,7 +18,7 @@ mycursor.execute("SHOW TABLES")
 for x in mycursor:
     print(x)
 
-from tkinter import Tk, Button, Label, Scrollbar, Listbox, StringVar, DoubleVar, IntVar, Entry, W, E, N, S, END
+from tkinter import Tk, Button, Label, Scrollbar, Listbox, StringVar, Frame, DoubleVar, IntVar, Entry, W, E, N, S, END
 from tkinter import ttk
 from tkinter import messagebox
 import tkinter as tk
@@ -47,6 +47,20 @@ class VideogameDB:
         rows = self.cursor.fetchall()
         return rows
 
+    def viewCart(self):
+        self.cursor.execute(f"SELECT * FROM cart;")
+        rows = self.cursor.fetchall()
+        return rows
+
+    def cartClear(self):
+        sql = (f"DELETE FROM cart WHERE oid <> {0};")
+        print(sql)
+        self.cursor.execute(sql)
+        self.con.commit()
+        messagebox.showinfo(title="Video Game Pro", message="Cart data removed from database")
+
+
+
     def getCID(self,username,password):
         print(f"user: {username} pass: {password}")
         self.cursor.execute(f"SELECT cid FROM customer WHERE username='{username}' and password='{password}';")
@@ -73,6 +87,13 @@ class VideogameDB:
         self.cursor.execute(sql)
         self.con.commit()
         messagebox.showinfo(title="Video Game Pro", message="New bank account added to database")
+
+    def insertCart(self,GID, selectedQuantity, totalPrice):
+        sql = (f"INSERT INTO cart (gid, quantity, total) VALUES ('{GID}', '{selectedQuantity}','{totalPrice}');")
+        print(sql)
+        self.cursor.execute(sql)
+        self.con.commit()
+        messagebox.showinfo(title="Video Game Pro", message="New cart item added to database")
 
     def removeBank(self, BID):
         sql = (f"DELETE FROM bank WHERE bid = '{BID}';")
@@ -114,11 +135,21 @@ def get_selected_row(event):
     q_input.delete(0,'end')
     q_input.insert('end',selected_tuple[4])
 
+    #load shopping cart info
+    id_input.delete(0, 'end')
+    id_input.insert('end', selected_tuple[0])
+    qcart_input.delete(0,'end')
+    qcart_input.insert('end', 1)
+
 def view_records():
     list_box.delete(0,'end')
     for row in db.view():
         list_box.insert('end',row)
 
+def view_cart():
+    shoppinglist_box.delete(0,'end')
+    for row in db.viewCart():
+        shoppinglist_box.insert('end',row)
 
 
 def add_game():
@@ -166,9 +197,15 @@ def bank_insert(win2,CID, bankName, accountNumber):
     # q_input.delete(0, 'end')
 
 def bank_remove(win2, BID):
-    db.removeBank(BID)
-    cnx.commit()
-    win2.destroy()
+    if(BID == ""):
+        print("empty")
+        messagebox.showerror(title="Error", message="Empty comboBox")
+        return
+    else:
+        BID = int(BID)
+        db.removeBank(BID)
+        cnx.commit()
+        win2.destroy()
 
 
 
@@ -182,6 +219,7 @@ def clear_screen():
     platform_combo.set('')
     price_input.delete(0, 'end')
     q_input.delete(0, 'end')
+    clearStartValues()
 
 def update_records():
     db.update(selected_tuple[0],title_text.get(), platform_combo.get(), price_text.get(), q_text.get())
@@ -193,6 +231,7 @@ def update_records():
 
 
 def on_closing():
+    cartClear()
     dd=db
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
         root.destroy()
@@ -286,7 +325,7 @@ def preOpenBank(CID): #gets bank rows
 def openBank(bankData, CID):
     print(f"CID: {CID}")
     win2 = tk.Toplevel()
-    win2.geometry("300x600")
+    win2.geometry("300x400")
 
     userCID_label = ttk.Label(win2, text=f"User: ", background="light blue", font=("TkDefaultFont", 16))
     userCID_label.grid(row=1, column=0, sticky=W, pady=10, padx=3)
@@ -333,12 +372,30 @@ def openBank(bankData, CID):
     bid_combo['values'] = values
 
     remove_btn = Button(win2, text="Remove", bg="red", fg="white", font="helvetica 10 bold",
-                        command=lambda: bank_remove(win2, int(bid_combo.get())))
+                        command=lambda: bank_remove(win2, bid_combo.get()))
 
     remove_btn.grid(row=7, column=1)
 
 
+def enableAdminButtons():
+    add_btn.config(state="normal")
+    modify_btn.config(state="normal")
+    delete_btn.config(state="normal")
+    clr_btn.config(state="normal")
 
+def enableUserButtons():
+    bank_btn.config(state="normal")
+    logout_btn.config(state="normal")
+    purchase_btn.config(state="normal")
+
+def disableAllButtons():
+    add_btn.config(state="disabled")
+    modify_btn.config(state="disabled")
+    delete_btn.config(state="disabled")
+    bank_btn.config(state="disabled")
+    logout_btn.config(state="disabled")
+    purchase_btn.config(state="disabled")
+    clr_btn.config(state="disabled")
 
 def login():
     if (username_text.get() =="" or password_text.get() == ""):
@@ -352,10 +409,17 @@ def login():
         try:
             global globalLogin
             globalLogin= cidrow[0][0];
-            signedin_label.config(text=f"USER: {globalLogin}")
-            bank_btn.config(state="normal")
-            logout_btn.config(state="normal")
-            print(type(globalLogin))
+            if (globalLogin==1):
+                signedin_label.config(text=f"ADMIN: {globalLogin}")
+                #admin only options
+                enableAdminButtons()
+                #other options
+                enableUserButtons()
+
+            else:
+                signedin_label.config(text=f"USER: {globalLogin}")
+                enableUserButtons()
+                print(type(globalLogin))
         except:
             messagebox.showwarning(title="Error", message="No such user")
 
@@ -363,8 +427,7 @@ def logout():
     global globalLogin
     globalLogin = ""
     signedin_label.config(text=f"USER: {globalLogin}")
-    bank_btn.config(state="disabled")
-    logout_btn.config(state="disabled")
+    disableAllButtons()
     print(globalLogin)
 
 def clearTitle():
@@ -384,15 +447,53 @@ def modifyGame():
     view_records()
     print(f"{tempCID} {tempTitle} {tempPlatform} {tempPrice} {tempQ}")
 
+def cartAdd(gid, price, itemQuantity, selectedQuantity):
+        global cartTotal
+        print(f"gid: {gid} price: {price} itemQ: {itemQuantity} selectQ: {selectedQuantity}")
+        if(itemQuantity < selectedQuantity):
+            messagebox.showerror(title="Error", message="Not enough quantity in stock")
+            id_input.delete(0, 'end')
+            qcart_input.delete(0, 'end')
+            return
+        else:
+            itemPrice = float(price)
+            itemTotal = int(selectedQuantity) * float(itemPrice)
+            cartTotal = cartTotal + itemTotal
+            cartTotal = round(cartTotal,2)
+            print(itemTotal)
+            gTotal2_label.config(text= '$'+str(cartTotal))
+            db.insertCart(gid,selectedQuantity,itemTotal)
+            view_cart()
+            id_input.delete(0, 'end')
+            qcart_input.delete(0, 'end')
+
+def cartClear():
+    db.cartClear()
+    shoppinglist_box.delete(0, 'end')
+    id_input.delete(0, 'end')
+    qcart_input.delete(0, 'end')
+    global cartTotal
+    cartTotal = 0.0
+    gTotal2_label.config(text='$' + str(cartTotal))
+
+def clearStartValues(): #clears some of the start values that are not blank for some reason
+    price_input.delete(0, 'end')
+    q_input.delete(0, 'end')
+    id_input.delete(0,'end')
+    qcart_input.delete(0,'end')
+
+
+
 
 globalLogin = 0
+cartTotal = 0.00
 db = VideogameDB()
 
 root = Tk()
 
 root.title("Video Game Pro")
 root.configure(background="light blue")
-root.geometry("1050x650")
+root.geometry("950x650")
 root.resizable(width=False, height=False)
 
 
@@ -420,7 +521,7 @@ register_btn.grid(row=1, column=5)
 logout_btn = Button(root, text="Logout", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=logout)
 logout_btn.grid(row=1, column=6)
 
-bank_btn = Button(root, text="Add Bank", bg="slate gray", fg="white", font="helvetica 10 bold", command=lambda: preOpenBank(globalLogin), state="disabled")
+bank_btn = Button(root, text="Bank \u2699", bg="slate gray", fg="white", font="helvetica 10 bold", command=lambda: preOpenBank(globalLogin), state="disabled")
 bank_btn.grid(row=1, column=7)
 
 exit_btn = Button(root, text="Exit", bg="violetred", fg="white", font="helvetica 10 bold", command=on_closing)
@@ -428,6 +529,7 @@ exit_btn.grid(row=1, column=8, sticky=W)
 
 signedin_label = ttk.Label(root, text="USER: ", background="light blue", font=("TkDefaultFont", 16))
 signedin_label.grid(row=1, column=9, sticky=W, pady=10, padx=3)
+
 
 
 # Add game to system
@@ -466,10 +568,10 @@ q_text = IntVar()
 q_input = ttk.Entry(root, width=8, textvariable=q_text, font=("TkDefaultFont", 12))
 q_input.grid(row=2, column=7, sticky=W)
 
-clear_btn = Button(root, text="CLR", bg="red", fg="white", font="helvetica 10 bold", command=clearTitle)
-clear_btn.grid(row=2, column=8)
+clr_btn = Button(root, text="CLR", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=clearTitle)
+clr_btn.grid(row=2, column=8)
 
-add_btn = Button(root, text="Add Game", bg="blue", fg="white", font="helvetica 10 bold", command=add_game)
+add_btn = Button(root, text="Add Game", bg="blue", fg="white", font="helvetica 10 bold",state="disabled", command=add_game)
 add_btn.grid(row=2, column=9)
 
 #Item display with buttons
@@ -483,10 +585,10 @@ scroll_bar.grid(row=3, column=3)
 list_box.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.configure(command=list_box.yview)
 
-modify_btn = Button(root, text="Modify Record", bg="purple", fg="white", font="helvetica 10 bold", command=modifyGame)
+modify_btn = Button(root, text="Modify Record", bg="purple", fg="white", font="helvetica 10 bold", state="disabled", command=modifyGame)
 modify_btn.grid(row=4, column=2)
 
-delete_btn = Button(root, text="Delete Record", bg="red", fg="white", font="helvetica 10 bold", command=delete_records)
+delete_btn = Button(root, text="Delete Record", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=delete_records)
 delete_btn.grid(row=4, column=3)
 
 load_btn = Button(root, text="Load Records", bg="cornflowerblue", fg="white", font="helvetica 10 bold", command=view_records)
@@ -495,8 +597,61 @@ load_btn.grid(row=4, column=0)
 clear_btn = Button(root, text="Clear Screen", bg="maroon", fg="white", font="helvetica 10 bold", command=clear_screen)
 clear_btn.grid(row=4, column=1, sticky=W)
 
-view_records()
+# shopping cart area
+cartframe = Frame(root, bg="light blue", width=150, height = 200)
+cartframe.grid(row=3, column=5)
 
+shoppinglist_box = Listbox(root, height=12, font="helvetica 13", bg="light gray")
+shoppinglist_box.grid(row=3, column=6, columnspan=3, sticky= N +S)
+#
+cart_label = ttk.Label(cartframe, text="CART", background="light blue", font=("TkDefaultFont", 16))
+cart_label.grid(row =0,column =0)
+
+separator2 = Separator(cartframe, orient = 'horizontal')
+separator2.grid(row=1,column =0, columnspan =4, sticky=" ew", pady=10)
+
+
+id_label = ttk.Label(cartframe, text="GID: ", background="light blue", font=("TkDefaultFont", 14))
+id_label.grid(row =2,column =0)
+#
+id_text = IntVar()
+id_input = ttk.Entry(cartframe, width=3, textvariable=id_text, font=("TkDefaultFont", 12))
+id_input.grid(row=2, column=1)
+#
+qcart_label = ttk.Label(cartframe, text="Q: ", background="light blue", font=("TkDefaultFont", 14))
+qcart_label.grid(row=3, column=0)
+
+qcart_text = IntVar()
+qcart_input = ttk.Entry(cartframe, width=3, textvariable=qcart_text, font=("TkDefaultFont", 12))
+qcart_input.grid(row=3, column=1)
+
+clearCart_btn = Button(cartframe, text="Clear", bg="red", fg="white", font="helvetica 10 bold", command=cartClear)
+clearCart_btn.grid(row=4, column=0, pady = 10)
+
+addCart_btn = Button(cartframe, text="Add", bg="green", fg="white", font="helvetica 10 bold", command=lambda: cartAdd(id_input.get(),price_input.get(),q_input.get() ,qcart_input.get()))
+addCart_btn.grid(row=4, column=1, pady = 10)
+
+separator = Separator(cartframe, orient = 'horizontal')
+separator.grid(row=5,column =0, columnspan =4, sticky=" ew", pady=10)
+
+gTotal_label = ttk.Label(cartframe, text="Total:", background="light blue", font=("TkDefaultFont", 12))
+gTotal_label.grid(row=6, column=0)
+
+gTotal2_label = ttk.Label(cartframe, text="$0.0", background="light blue", font=("TkDefaultFont", 14))
+gTotal2_label.grid(row=6, column=1)
+
+selectBank_label = ttk.Label(cartframe, text="Bank: ", background="light blue", font=("TkDefaultFont", 12))
+selectBank_label.grid(row=7, column=0)
+
+cartBank_combo = ttk.Combobox(cartframe, width=4, state="readonly", font=("TkDefaultFont", 12))
+cartBank_combo.grid(row=7, column=1)
+cartBank_combo['values'] = 0
+
+purchase_btn = Button(root, text="PURCHASE", bg="spring green", fg="black", font="helvetica 10 bold", state="disabled", command=modifyGame)
+purchase_btn.grid(row=4, column=7)
+
+view_records()
+clearStartValues()
 
 
 root.mainloop()
