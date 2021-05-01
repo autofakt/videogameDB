@@ -1,3 +1,5 @@
+from tkinter.ttk import Separator
+
 import mysql.connector
 
 cnx = mysql.connector.connect(user='root', password='blue5555',
@@ -40,6 +42,11 @@ class VideogameDB:
         rows = self.cursor.fetchall()
         return rows
 
+    def viewBank(self, CID):
+        self.cursor.execute(f"SELECT * FROM bank WHERE cid = '{CID}';")
+        rows = self.cursor.fetchall()
+        return rows
+
     def getCID(self,username,password):
         print(f"user: {username} pass: {password}")
         self.cursor.execute(f"SELECT cid FROM customer WHERE username='{username}' and password='{password}';")
@@ -67,15 +74,23 @@ class VideogameDB:
         self.con.commit()
         messagebox.showinfo(title="Video Game Pro", message="New bank account added to database")
 
+    def removeBank(self, BID):
+        sql = (f"DELETE FROM bank WHERE bid = '{BID}';")
+        print(sql)
+        self.cursor.execute(sql)
+        self.con.commit()
+        messagebox.showinfo(title="Video Game Pro", message="bank account removed from database")
+
     def update(self, gid, title, platform, price, quantity):
-        tsql = 'UPDATE games SET title = %s, platform = %s, price = %f, quantity = %d WHERE gid = %%d'
-        self.cursor.execute(tsql, [title,platform,price,quantity,gid])
+        tsql = f"UPDATE games SET title = '{title}', platform = '{platform}', price = '{price}', quantity = '{quantity}' WHERE gid = '{gid}';"
+        print(tsql)
+        self.cursor.execute(tsql)
         self.con.commit()
         messagebox.showinfo(title="Game Datebase", message="Game updated")
 
-    def __delete__(self, gid):
-        delquery = 'DELETE FROM games WHERE gid = %d'
-        self.cursor.execute(delquery, [id])
+    def delete(self, gid):
+        delquery = f"DELETE FROM games WHERE gid = '{gid}';"
+        self.cursor.execute(delquery)
         self.con.commit()
         messagebox.showinfo(title="Game Datebase", message="Game Deleted")
 
@@ -83,11 +98,17 @@ class VideogameDB:
 
 def get_selected_row(event):
     global selected_tuple
-    index = list_box.curselection()[0]
-    selected_tuple = list_box.get(index)
+    add_btn.config(state="disabled")
+    try:
+        index = list_box.curselection()[0]
+        selected_tuple = list_box.get(index)
+    except:
+        index = selected_tuple[0]-1
+
+
     title_input.delete(0,'end')
     title_input.insert('end',selected_tuple[1])
-    #Platform needs special case here
+    platform_combo.set(selected_tuple[2])
     price_input.delete(0,'end')
     price_input.insert('end',selected_tuple[3])
     q_input.delete(0,'end')
@@ -98,15 +119,26 @@ def view_records():
     for row in db.view():
         list_box.insert('end',row)
 
+
+
 def add_game():
-    db.insert(title_text.get(),platform_combo.get(), price_text.get(), q_text.get())
-    list_box.delete(0,'end')
-    list_box.insert('end',(title_text.get(),platform_combo.get(), price_text.get(), q_text.get()))
-    title_input.delete(0,'end')
-    platform_combo.set('')
-    price_input.delete(0,'end')
-    q_input.delete(0,'end')
-    cnx.commit()
+    if (title_text.get() == "" or platform_combo.get() == ""):
+        messagebox.showwarning(title="Error", message="Title and/or platform fields cannot be blank")
+        title_input.delete(0, 'end')
+        platform_combo.set('')
+        price_input.delete(0, 'end')
+        q_input.delete(0, 'end')
+        print("returned")
+        return
+    else:
+        db.insert(title_text.get(),platform_combo.get(), price_text.get(), q_text.get())
+        list_box.delete(0,'end')
+        list_box.insert('end',(title_text.get(),platform_combo.get(), price_text.get(), q_text.get()))
+        title_input.delete(0,'end')
+        platform_combo.set('')
+        price_input.delete(0,'end')
+        q_input.delete(0,'end')
+        cnx.commit()
 
 def reg_submit(username, password, fName, lName, address, city, state, zip, phone, email):
     db.insertReg(username, password, fName,lName, address, city, state, zip, phone, email)
@@ -118,15 +150,27 @@ def reg_submit(username, password, fName, lName, address, city, state, zip, phon
     # q_input.delete(0, 'end')
     cnx.commit()
 
-def bank_insert(CID, bankName, accountNumber):
-    db.insertBank(CID, bankName, accountNumber)
+def bank_insert(win2,CID, bankName, accountNumber):
+    if (bankName != "" and accountNumber != ""):
+        db.insertBank(CID, bankName, accountNumber)
+        cnx.commit()
+    else:
+        messagebox.showerror(title="Error", message="Bank name and/or account number cannot be empty.")
+        win2.destroy()
+        return
     # list_box.delete(0, 'end')
     # list_box.insert('end', (title_text.get(), platform_combo.get(), price_text.get(), q_text.get()))
     # title_input.delete(0, 'end')
     # platform_combo.set('')
     # price_input.delete(0, 'end')
     # q_input.delete(0, 'end')
+
+def bank_remove(win2, BID):
+    db.removeBank(BID)
     cnx.commit()
+    win2.destroy()
+
+
 
 def delete_records():
     db.delete(selected_tuple[0])
@@ -146,6 +190,7 @@ def update_records():
     price_input.delete(0, 'end')
     q_input.delete(0, 'end')
     cnx.commit()
+
 
 def on_closing():
     dd=db
@@ -233,11 +278,15 @@ def openRegister():
         submit_btn = Button(win1, text="Submit", bg="blue", fg="white", font="helvetica 10 bold", command= lambda: reg_submit(username_text.get(),password_text.get(), fName_text.get(), lName_text.get(),address_text.get(), city_text.get(), state_combo.get(), zip_text.get(), phone_text.get(), email_text.get()))
         submit_btn.grid(row=12, column=1)
 
+def preOpenBank(CID): #gets bank rows
+    data = db.viewBank(CID)
+    openBank(data,CID)
 
-def openBank(CID):
+
+def openBank(bankData, CID):
     print(f"CID: {CID}")
     win2 = tk.Toplevel()
-    win2.geometry("300x400")
+    win2.geometry("300x600")
 
     userCID_label = ttk.Label(win2, text=f"User: ", background="light blue", font=("TkDefaultFont", 16))
     userCID_label.grid(row=1, column=0, sticky=W, pady=10, padx=3)
@@ -245,25 +294,50 @@ def openBank(CID):
     userCIDValue_label = ttk.Label(win2, text=str(CID), background="light blue", font=("TkDefaultFont", 16))
     userCIDValue_label.grid(row=1, column=1, sticky=W, pady=10, padx=3)
 
+    list_box = Listbox(win2, height=6, font="helvetica 13", bg="light gray")
+    list_box.grid(row=2, column=0, columnspan=2, sticky=W + E)
+
+    list_box.delete(0, 'end')
+    for row in bankData:
+        list_box.insert('end', row)
+
     bankName_label = ttk.Label(win2, text="Bank Name: ", background="light blue", font=("TkDefaultFont", 16))
-    bankName_label.grid(row=2, column=0, sticky=W, pady=10, padx=3)
+    bankName_label.grid(row=3, column=0, sticky=W, pady=10, padx=3)
 
     bankName_text = StringVar()
     bankName_input = ttk.Entry(win2, width=10, textvariable=bankName_text, font=("TkDefaultFont", 12))
-    bankName_input.grid(row=2, column=1, sticky=W)
+    bankName_input.grid(row=3, column=1, sticky=W)
 
     accountNumber_label = ttk.Label(win2, text="Account Number: ", background="light blue", font=("TkDefaultFont", 16))
-    accountNumber_label.grid(row=3, column=0, sticky=W, pady=10, padx=3)
+    accountNumber_label.grid(row=4, column=0, sticky=W, pady=10, padx=3)
 
     accountNumber_text = StringVar()
     accountNumber_input = ttk.Entry(win2, width=10, textvariable=accountNumber_text, font=("TkDefaultFont", 12))
-    accountNumber_input.grid(row=3, column=1, sticky=W)
+    accountNumber_input.grid(row=4, column=1, sticky=W)
 
 
 
-    submit_btn = Button(win2, text="Submit", bg="blue", fg="white", font="helvetica 10 bold", command=lambda: bank_insert(int(CID), bankName_text.get(), accountNumber_text.get()))
+    submit_btn = Button(win2, text="Add", bg="green", fg="white", font="helvetica 10 bold", command=lambda: bank_insert(win2,int(CID), bankName_text.get(), accountNumber_text.get()))
 
-    submit_btn.grid(row=4, column=1)
+    submit_btn.grid(row=5, column=1)
+
+    bid_label = ttk.Label(win2, text="BID: ", background="light blue", font=("TkDefaultFont", 16))
+    bid_label.grid(row=6, column=0, sticky=W, pady=10, padx=3)
+
+    bid_combo = ttk.Combobox(win2, width=8, state="readonly", font=("TkDefaultFont", 12))
+    bid_combo.grid(row=6, column=1, sticky=W)
+
+    values = []  #gets all the bid values and puts them into a combobox
+    for x in bankData:
+        values.append(x[0])
+    bid_combo['values'] = values
+
+    remove_btn = Button(win2, text="Remove", bg="red", fg="white", font="helvetica 10 bold",
+                        command=lambda: bank_remove(win2, int(bid_combo.get())))
+
+    remove_btn.grid(row=7, column=1)
+
+
 
 
 def login():
@@ -292,6 +366,23 @@ def logout():
     bank_btn.config(state="disabled")
     logout_btn.config(state="disabled")
     print(globalLogin)
+
+def clearTitle():
+    add_btn.config(state="normal")
+    title_input.delete(0, 'end')
+    platform_combo.set('')
+    price_input.delete(0, 'end')
+    q_input.delete(0, 'end')
+
+def modifyGame():
+    tempCID = selected_tuple[0]
+    tempTitle = title_text.get()
+    tempPlatform = platform_combo.get()
+    tempPrice = price_text.get()
+    tempQ = q_text.get()
+    db.update(tempCID,tempTitle, tempPlatform, tempPrice, tempQ)
+    view_records()
+    print(f"{tempCID} {tempTitle} {tempPlatform} {tempPrice} {tempQ}")
 
 
 globalLogin = 0
@@ -329,7 +420,7 @@ register_btn.grid(row=1, column=5)
 logout_btn = Button(root, text="Logout", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=logout)
 logout_btn.grid(row=1, column=6)
 
-bank_btn = Button(root, text="Add Bank", bg="slate gray", fg="white", font="helvetica 10 bold", command=lambda: openBank(globalLogin), state="disabled")
+bank_btn = Button(root, text="Add Bank", bg="slate gray", fg="white", font="helvetica 10 bold", command=lambda: preOpenBank(globalLogin), state="disabled")
 bank_btn.grid(row=1, column=7)
 
 exit_btn = Button(root, text="Exit", bg="violetred", fg="white", font="helvetica 10 bold", command=on_closing)
@@ -337,6 +428,7 @@ exit_btn.grid(row=1, column=8, sticky=W)
 
 signedin_label = ttk.Label(root, text="USER: ", background="light blue", font=("TkDefaultFont", 16))
 signedin_label.grid(row=1, column=9, sticky=W, pady=10, padx=3)
+
 
 # Add game to system
 title_label = ttk.Label(root, text="Game Title: ", background="light blue", font=("TkDefaultFont", 16))
@@ -374,12 +466,16 @@ q_text = IntVar()
 q_input = ttk.Entry(root, width=8, textvariable=q_text, font=("TkDefaultFont", 12))
 q_input.grid(row=2, column=7, sticky=W)
 
+clear_btn = Button(root, text="CLR", bg="red", fg="white", font="helvetica 10 bold", command=clearTitle)
+clear_btn.grid(row=2, column=8)
+
 add_btn = Button(root, text="Add Game", bg="blue", fg="white", font="helvetica 10 bold", command=add_game)
-add_btn.grid(row=2, column=8, padx=30)
+add_btn.grid(row=2, column=9)
 
 #Item display with buttons
 list_box = Listbox(root, height=16, font="helvetica 13", bg="light gray")
 list_box.grid(row=3, column=0, columnspan=4, sticky=W + E)
+list_box.bind('<<ListboxSelect>>',get_selected_row)
 
 scroll_bar = Scrollbar(root)
 scroll_bar.grid(row=3, column=3)
@@ -387,10 +483,10 @@ scroll_bar.grid(row=3, column=3)
 list_box.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.configure(command=list_box.yview)
 
-modify_btn = Button(root, text="Modify Record", bg="purple", fg="white", font="helvetica 10 bold", command="")
+modify_btn = Button(root, text="Modify Record", bg="purple", fg="white", font="helvetica 10 bold", command=modifyGame)
 modify_btn.grid(row=4, column=2)
 
-delete_btn = Button(root, text="Delete Record", bg="red", fg="white", font="helvetica 10 bold", command="")
+delete_btn = Button(root, text="Delete Record", bg="red", fg="white", font="helvetica 10 bold", command=delete_records)
 delete_btn.grid(row=4, column=3)
 
 load_btn = Button(root, text="Load Records", bg="cornflowerblue", fg="white", font="helvetica 10 bold", command=view_records)
@@ -399,7 +495,7 @@ load_btn.grid(row=4, column=0)
 clear_btn = Button(root, text="Clear Screen", bg="maroon", fg="white", font="helvetica 10 bold", command=clear_screen)
 clear_btn.grid(row=4, column=1, sticky=W)
 
-
+view_records()
 
 
 
