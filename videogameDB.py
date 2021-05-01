@@ -197,9 +197,15 @@ def bank_insert(win2,CID, bankName, accountNumber):
     # q_input.delete(0, 'end')
 
 def bank_remove(win2, BID):
-    db.removeBank(BID)
-    cnx.commit()
-    win2.destroy()
+    if(BID == ""):
+        print("empty")
+        messagebox.showerror(title="Error", message="Empty comboBox")
+        return
+    else:
+        BID = int(BID)
+        db.removeBank(BID)
+        cnx.commit()
+        win2.destroy()
 
 
 
@@ -225,6 +231,7 @@ def update_records():
 
 
 def on_closing():
+    cartClear()
     dd=db
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
         root.destroy()
@@ -365,7 +372,7 @@ def openBank(bankData, CID):
     bid_combo['values'] = values
 
     remove_btn = Button(win2, text="Remove", bg="red", fg="white", font="helvetica 10 bold",
-                        command=lambda: bank_remove(win2, int(bid_combo.get())))
+                        command=lambda: bank_remove(win2, bid_combo.get()))
 
     remove_btn.grid(row=7, column=1)
 
@@ -374,12 +381,21 @@ def enableAdminButtons():
     add_btn.config(state="normal")
     modify_btn.config(state="normal")
     delete_btn.config(state="normal")
+    clr_btn.config(state="normal")
 
 def enableUserButtons():
     bank_btn.config(state="normal")
     logout_btn.config(state="normal")
     purchase_btn.config(state="normal")
-    clear_btn.config(state="normal")
+
+def disableAllButtons():
+    add_btn.config(state="disabled")
+    modify_btn.config(state="disabled")
+    delete_btn.config(state="disabled")
+    bank_btn.config(state="disabled")
+    logout_btn.config(state="disabled")
+    purchase_btn.config(state="disabled")
+    clr_btn.config(state="disabled")
 
 def login():
     if (username_text.get() =="" or password_text.get() == ""):
@@ -411,8 +427,7 @@ def logout():
     global globalLogin
     globalLogin = ""
     signedin_label.config(text=f"USER: {globalLogin}")
-    bank_btn.config(state="disabled")
-    logout_btn.config(state="disabled")
+    disableAllButtons()
     print(globalLogin)
 
 def clearTitle():
@@ -553,8 +568,8 @@ q_text = IntVar()
 q_input = ttk.Entry(root, width=8, textvariable=q_text, font=("TkDefaultFont", 12))
 q_input.grid(row=2, column=7, sticky=W)
 
-clear_btn = Button(root, text="CLR", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=clearTitle)
-clear_btn.grid(row=2, column=8)
+clr_btn = Button(root, text="CLR", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=clearTitle)
+clr_btn.grid(row=2, column=8)
 
 add_btn = Button(root, text="Add Game", bg="blue", fg="white", font="helvetica 10 bold",state="disabled", command=add_game)
 add_btn.grid(row=2, column=9)
