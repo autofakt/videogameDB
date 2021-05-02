@@ -52,12 +52,13 @@ class VideogameDB:
         rows = self.cursor.fetchall()
         return rows
 
-    def cartClear(self):
+    def cartClear(self,bool):
         sql = (f"DELETE FROM cart WHERE oid <> {0};")
         print(sql)
         self.cursor.execute(sql)
         self.con.commit()
-        messagebox.showinfo(title="Video Game Pro", message="Cart data removed from database")
+        if(bool):
+            messagebox.showinfo(title="Video Game Pro", message="Cart data removed from database")
 
 
 
@@ -171,20 +172,27 @@ def add_game():
         q_input.delete(0,'end')
         cnx.commit()
 
-def reg_submit(username, password, fName, lName, address, city, state, zip, phone, email):
-    db.insertReg(username, password, fName,lName, address, city, state, zip, phone, email)
+def reg_submit(win1,username, password, fName, lName, address, city, state, zip, phone, email):
+    if(username =="" or password =="" or fName =="" or lName =="" or address =="" or city=="" or state =="" or zip =="" or phone =="" or email==""):
+        messagebox.showerror(title="Error", message="No blank fields")
+        win1.destroy()
+    else:
+        db.insertReg(username, password, fName,lName, address, city, state, zip, phone, email)
     # list_box.delete(0, 'end')
     # list_box.insert('end', (title_text.get(), platform_combo.get(), price_text.get(), q_text.get()))
     # title_input.delete(0, 'end')
     # platform_combo.set('')
     # price_input.delete(0, 'end')
     # q_input.delete(0, 'end')
-    cnx.commit()
+        cnx.commit()
+        win1.destroy()
 
 def bank_insert(win2,CID, bankName, accountNumber):
     if (bankName != "" and accountNumber != ""):
         db.insertBank(CID, bankName, accountNumber)
         cnx.commit()
+        loadBankData()
+        win2.destroy()
     else:
         messagebox.showerror(title="Error", message="Bank name and/or account number cannot be empty.")
         win2.destroy()
@@ -200,12 +208,14 @@ def bank_remove(win2, BID):
     if(BID == ""):
         print("empty")
         messagebox.showerror(title="Error", message="Empty comboBox")
+        win2.destroy()
         return
     else:
         BID = int(BID)
         db.removeBank(BID)
         cnx.commit()
         win2.destroy()
+        loadBankData()
 
 
 
@@ -231,7 +241,7 @@ def update_records():
 
 
 def on_closing():
-    cartClear()
+    cartClear(True)
     dd=db
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
         root.destroy()
@@ -314,12 +324,12 @@ def openRegister():
         email_input = ttk.Entry(win1, width=10, textvariable=email_text, font=("TkDefaultFont", 12))
         email_input.grid(row=11, column=1, sticky=W)
 
-        submit_btn = Button(win1, text="Submit", bg="blue", fg="white", font="helvetica 10 bold", command= lambda: reg_submit(username_text.get(),password_text.get(), fName_text.get(), lName_text.get(),address_text.get(), city_text.get(), state_combo.get(), zip_text.get(), phone_text.get(), email_text.get()))
+        submit_btn = Button(win1, text="Submit", bg="blue", fg="white", font="helvetica 10 bold", command= lambda: reg_submit(win1,username_text.get(),password_text.get(), fName_text.get(), lName_text.get(),address_text.get(), city_text.get(), state_combo.get(), zip_text.get(), phone_text.get(), email_text.get()))
         submit_btn.grid(row=12, column=1)
 
-def preOpenBank(CID): #gets bank rows
+def grabBankData(CID): #gets bank rows
     data = db.viewBank(CID)
-    openBank(data,CID)
+    return data
 
 
 def openBank(bankData, CID):
@@ -387,6 +397,8 @@ def enableUserButtons():
     bank_btn.config(state="normal")
     logout_btn.config(state="normal")
     purchase_btn.config(state="normal")
+    loadHistory_btn.config(state="normal")
+    clearHistory_btn.config(state="normal")
 
 def disableAllButtons():
     add_btn.config(state="disabled")
@@ -396,6 +408,8 @@ def disableAllButtons():
     logout_btn.config(state="disabled")
     purchase_btn.config(state="disabled")
     clr_btn.config(state="disabled")
+    loadHistory_btn.config(state="disabled")
+    clearHistory_btn.config(state="disabled")
 
 def login():
     if (username_text.get() =="" or password_text.get() == ""):
@@ -408,7 +422,7 @@ def login():
         password_input.delete(0, 'end')
         try:
             global globalLogin
-            globalLogin= cidrow[0][0];
+            globalLogin= cidrow[0][0]
             if (globalLogin==1):
                 signedin_label.config(text=f"ADMIN: {globalLogin}")
                 #admin only options
@@ -422,6 +436,8 @@ def login():
                 print(type(globalLogin))
         except:
             messagebox.showwarning(title="Error", message="No such user")
+
+        loadBankData()
 
 def logout():
     global globalLogin
@@ -449,26 +465,30 @@ def modifyGame():
 
 def cartAdd(gid, price, itemQuantity, selectedQuantity):
         global cartTotal
-        print(f"gid: {gid} price: {price} itemQ: {itemQuantity} selectQ: {selectedQuantity}")
-        if(itemQuantity < selectedQuantity):
-            messagebox.showerror(title="Error", message="Not enough quantity in stock")
-            id_input.delete(0, 'end')
-            qcart_input.delete(0, 'end')
-            return
+        if(selectedQuantity == "" or gid == ""):
+            messagebox.showerror(title="Error: Cart Add input", message="Fields cannot be blank")
+            return;
         else:
-            itemPrice = float(price)
-            itemTotal = int(selectedQuantity) * float(itemPrice)
-            cartTotal = cartTotal + itemTotal
-            cartTotal = round(cartTotal,2)
-            print(itemTotal)
-            gTotal2_label.config(text= '$'+str(cartTotal))
-            db.insertCart(gid,selectedQuantity,itemTotal)
-            view_cart()
-            id_input.delete(0, 'end')
-            qcart_input.delete(0, 'end')
+            print(f"gid: {gid} price: {price} itemQ: {itemQuantity} selectQ: {selectedQuantity}")
+            if(itemQuantity < selectedQuantity):
+                messagebox.showerror(title="Error", message="Not enough quantity in stock")
+                id_input.delete(0, 'end')
+                qcart_input.delete(0, 'end')
+                return
+            else:
+                itemPrice = float(price)
+                itemTotal = int(selectedQuantity) * float(itemPrice)
+                cartTotal = cartTotal + itemTotal
+                cartTotal = round(cartTotal,2)
+                print(itemTotal)
+                gTotal2_label.config(text= '$'+str(cartTotal))
+                db.insertCart(gid,selectedQuantity,itemTotal)
+                view_cart()
+                id_input.delete(0, 'end')
+                qcart_input.delete(0, 'end')
 
-def cartClear():
-    db.cartClear()
+def cartClear(bool):
+    db.cartClear(bool)
     shoppinglist_box.delete(0, 'end')
     id_input.delete(0, 'end')
     qcart_input.delete(0, 'end')
@@ -476,13 +496,21 @@ def cartClear():
     cartTotal = 0.0
     gTotal2_label.config(text='$' + str(cartTotal))
 
+
+
 def clearStartValues(): #clears some of the start values that are not blank for some reason
     price_input.delete(0, 'end')
     q_input.delete(0, 'end')
     id_input.delete(0,'end')
     qcart_input.delete(0,'end')
 
-
+def loadBankData():
+    bankData = grabBankData(globalLogin)
+    values = []  # gets all the bid values and puts them into a combobox
+    for x in bankData:
+        values.append(str(x[0]) + " " + x[2] + " " + x[3])
+    print(values)
+    cartBank_combo['values'] = values
 
 
 globalLogin = 0
@@ -521,7 +549,7 @@ register_btn.grid(row=1, column=5)
 logout_btn = Button(root, text="Logout", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=logout)
 logout_btn.grid(row=1, column=6)
 
-bank_btn = Button(root, text="Bank \u2699", bg="slate gray", fg="white", font="helvetica 10 bold", command=lambda: preOpenBank(globalLogin), state="disabled")
+bank_btn = Button(root, text="Bank \u2699", bg="slate gray", fg="white", font="helvetica 10 bold", command=lambda: openBank(grabBankData(globalLogin),globalLogin), state="disabled")
 bank_btn.grid(row=1, column=7)
 
 exit_btn = Button(root, text="Exit", bg="violetred", fg="white", font="helvetica 10 bold", command=on_closing)
@@ -625,7 +653,7 @@ qcart_text = IntVar()
 qcart_input = ttk.Entry(cartframe, width=3, textvariable=qcart_text, font=("TkDefaultFont", 12))
 qcart_input.grid(row=3, column=1)
 
-clearCart_btn = Button(cartframe, text="Clear", bg="red", fg="white", font="helvetica 10 bold", command=cartClear)
+clearCart_btn = Button(cartframe, text="Clear", bg="red", fg="white", font="helvetica 10 bold", command=lambda: cartClear(True))
 clearCart_btn.grid(row=4, column=0, pady = 10)
 
 addCart_btn = Button(cartframe, text="Add", bg="green", fg="white", font="helvetica 10 bold", command=lambda: cartAdd(id_input.get(),price_input.get(),q_input.get() ,qcart_input.get()))
@@ -647,11 +675,38 @@ cartBank_combo = ttk.Combobox(cartframe, width=4, state="readonly", font=("TkDef
 cartBank_combo.grid(row=7, column=1)
 cartBank_combo['values'] = 0
 
-purchase_btn = Button(root, text="PURCHASE", bg="spring green", fg="black", font="helvetica 10 bold", state="disabled", command=modifyGame)
+
+separator3 = Separator(cartframe, orient = 'horizontal')
+separator3.grid(row=9,column =0, columnspan =4, sticky=" ew", pady=10)
+
+purchase_btn = Button(root, text="PURCHASE", relief="raised", bd=6, bg="spring green", fg="black", font="helvetica 10 bold", state="disabled", command="")
 purchase_btn.grid(row=4, column=7)
+
+#purchase history
+purchaselist_box = Listbox(root, height=9, font="helvetica 13", bg="light gray")
+purchaselist_box.grid(row=5, column=0, columnspan=7,padx=5, pady=5, sticky= "E W")
+
+purchaseFrame = Frame(root, bg="light blue", width=80, height = 200)
+purchaseFrame.grid(row=5, column=7)
+
+history_label = ttk.Label(purchaseFrame, text="History", background="light blue", font=("TkDefaultFont", 16))
+history_label.grid(row=0, column=0)
+
+separatorP1 = Separator(purchaseFrame, orient = 'horizontal')
+separatorP1.grid(row=1,column =0, columnspan =4, sticky="WE", pady=10)
+
+loadHistory_btn = Button(purchaseFrame, text="Load", bg="cornflowerblue", fg="white", font="helvetica 10 bold", state="disabled", command=modifyGame)
+loadHistory_btn.grid(row=2, column=0)
+
+clearHistory_btn = Button(purchaseFrame, text="Clear", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=modifyGame)
+clearHistory_btn.grid(row=3, column=0)
+
+separatorP2 = Separator(purchaseFrame, orient = 'horizontal')
+separatorP2.grid(row=4,column =0, columnspan =4, sticky="WE", pady=10)
 
 view_records()
 clearStartValues()
+cartClear(False)
 
 
 root.mainloop()
