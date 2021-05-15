@@ -1,3 +1,6 @@
+
+
+
 from tkinter.ttk import Separator
 
 import mysql.connector
@@ -23,6 +26,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import tkinter as tk
 import datetime
+
 
 class VideogameDB:
     def __init__(self):
@@ -126,7 +130,6 @@ class VideogameDB:
         self.cursor.execute(delquery)
         self.con.commit()
         messagebox.showinfo(title="Game Datebase", message="Game Deleted")
-
 
 
 def get_selected_row(event):
@@ -250,6 +253,9 @@ def clear_screen():
     price_input.delete(0, 'end')
     q_input.delete(0, 'end')
     clearStartValues()
+
+def clearHistory_screen():
+    purchaselist_box.delete(0,'end')
 
 def update_records():
     db.update(selected_tuple[0],title_text.get(), platform_combo.get(), price_text.get(), q_text.get())
@@ -469,12 +475,18 @@ def login():
 
         loadBankData()
 
+def clearBankCombo():
+    cartBank_combo.set('')
+    cartBank_combo['values'] = ""
+
 def logout():
     global globalLogin
     globalLogin = ""
     signedin_label.config(text=f"USER: {globalLogin}")
     disableAllButtons()
     print(globalLogin)
+    clearBankCombo()
+    clearHistory_screen()
 
 def clearTitle():
     add_btn.config(state="normal")
@@ -543,6 +555,9 @@ def loadBankData():
     cartBank_combo['values'] = values
 
 def purchaseCart():
+    if cartBank_combo.get() == "":
+        messagebox.showinfo(title="Video Game Pro", message="Bank info cannot be left blank")
+        return
     global cartTotal
     date = datetime.datetime.now()
     # print(cartTotal)
@@ -557,6 +572,7 @@ def purchaseCart():
         # print(str(row[1]) + str(row[3]))
     messagebox.showinfo(title="Video Game Pro", message="New History items added to database")
     view_history()
+    cartClear(False);
 
 def history_insert(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date):
     db.insertHistory(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date)
@@ -652,7 +668,7 @@ add_btn = Button(root, text="Add Game", bg="blue", fg="white", font="helvetica 1
 add_btn.grid(row=2, column=9)
 
 #Listbox view
-gameInfo_label = ttk.Label(root, text="gid     title     platform    price  quantity                                ", background="light blue", font=("TkDefaultFont", 10))
+gameInfo_label = ttk.Label(root, text="gid          title        platform    price  q                                  ", background="light blue", font=("TkDefaultFont", 10))
 gameInfo_label.grid(row=3, column=0, columnspan = 3)
 
 #Item display with buttons
@@ -760,7 +776,7 @@ separatorP1.grid(row=1,column =0, columnspan =4, sticky="WE", pady=10)
 loadHistory_btn = Button(purchaseFrame, text="Load", bg="cornflowerblue", fg="white", font="helvetica 10 bold", state="disabled", command=view_history)
 loadHistory_btn.grid(row=2, column=0)
 
-clearHistory_btn = Button(purchaseFrame, text="Clear", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command="")
+clearHistory_btn = Button(purchaseFrame, text="Clear", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=clearHistory_screen)
 clearHistory_btn.grid(row=3, column=0)
 
 separatorP2 = Separator(purchaseFrame, orient = 'horizontal')
@@ -772,3 +788,4 @@ cartClear(False)
 
 
 root.mainloop()
+
