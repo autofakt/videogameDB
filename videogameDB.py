@@ -22,7 +22,7 @@ from tkinter import Tk, Button, Label, Scrollbar, Listbox, StringVar, Frame, Dou
 from tkinter import ttk
 from tkinter import messagebox
 import tkinter as tk
-
+import datetime
 
 class VideogameDB:
     def __init__(self):
@@ -49,6 +49,11 @@ class VideogameDB:
 
     def viewCart(self):
         self.cursor.execute(f"SELECT * FROM cart;")
+        rows = self.cursor.fetchall()
+        return rows
+
+    def viewHistory(self):
+        self.cursor.execute(f"SELECT * FROM history;")
         rows = self.cursor.fetchall()
         return rows
 
@@ -95,6 +100,12 @@ class VideogameDB:
         self.cursor.execute(sql)
         self.con.commit()
         messagebox.showinfo(title="Video Game Pro", message="New cart item added to database")
+
+    def insertHistory(self,CID,BID,tempGID, tempQ,tempPrice,cartTotal,date):
+        sql = (f"INSERT INTO history (cid, bid, gid, quantity, price, orderTotal, date ) VALUES ('{CID}', '{BID}','{tempGID}', '{tempQ}', '{tempPrice}', '{cartTotal}', '{date}');")
+        print(sql)
+        self.cursor.execute(sql)
+        self.con.commit()
 
     def removeBank(self, BID):
         sql = (f"DELETE FROM bank WHERE bid = '{BID}';")
@@ -151,6 +162,15 @@ def view_cart():
     shoppinglist_box.delete(0,'end')
     for row in db.viewCart():
         shoppinglist_box.insert('end',row)
+
+def view_history():
+    purchaselist_box.delete(0,'end')
+    for row in db.viewHistory():
+        purchaselist_box.insert('end',row)
+
+def getCartData():
+    data = db.viewCart()
+    return data
 
 
 def add_game():
@@ -330,6 +350,12 @@ def openRegister():
 def grabBankData(CID): #gets bank rows
     data = db.viewBank(CID)
     return data
+
+def grabSelectedBankBID():
+    selectedData = cartBank_combo.get()
+    print(selectedData.split()[0])
+    BID = int(selectedData.split()[0])
+    return BID
 
 
 def openBank(bankData, CID):
@@ -512,6 +538,25 @@ def loadBankData():
     print(values)
     cartBank_combo['values'] = values
 
+def purchaseCart():
+    global cartTotal
+    date = datetime.datetime.now()
+    # print(cartTotal)
+    # print(date)
+    CID = globalLogin
+    BID = grabSelectedBankBID()
+    for row in getCartData():
+        tempGID = row[1]
+        tempQ = row[2]
+        tempPrice = row[3]
+        history_insert(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date)
+        # print(str(row[1]) + str(row[3]))
+    messagebox.showinfo(title="Video Game Pro", message="New History items added to database")
+    view_history()
+
+def history_insert(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date):
+    db.insertHistory(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date)
+
 
 globalLogin = 0
 cartTotal = 0.00
@@ -521,7 +566,7 @@ root = Tk()
 
 root.title("Video Game Pro")
 root.configure(background="light blue")
-root.geometry("950x650")
+root.geometry("1000x700")
 root.resizable(width=False, height=False)
 
 
@@ -679,7 +724,7 @@ cartBank_combo['values'] = 0
 separator3 = Separator(cartframe, orient = 'horizontal')
 separator3.grid(row=9,column =0, columnspan =4, sticky=" ew", pady=10)
 
-purchase_btn = Button(root, text="PURCHASE", relief="raised", bd=6, bg="spring green", fg="black", font="helvetica 10 bold", state="disabled", command="")
+purchase_btn = Button(root, text="PURCHASE", relief="raised", bd=6, bg="spring green", fg="black", font="helvetica 10 bold", state="disabled", command=purchaseCart)
 purchase_btn.grid(row=4, column=7)
 
 #purchase history
@@ -695,10 +740,10 @@ history_label.grid(row=0, column=0)
 separatorP1 = Separator(purchaseFrame, orient = 'horizontal')
 separatorP1.grid(row=1,column =0, columnspan =4, sticky="WE", pady=10)
 
-loadHistory_btn = Button(purchaseFrame, text="Load", bg="cornflowerblue", fg="white", font="helvetica 10 bold", state="disabled", command=modifyGame)
+loadHistory_btn = Button(purchaseFrame, text="Load", bg="cornflowerblue", fg="white", font="helvetica 10 bold", state="disabled", command=view_history)
 loadHistory_btn.grid(row=2, column=0)
 
-clearHistory_btn = Button(purchaseFrame, text="Clear", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=modifyGame)
+clearHistory_btn = Button(purchaseFrame, text="Clear", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command="")
 clearHistory_btn.grid(row=3, column=0)
 
 separatorP2 = Separator(purchaseFrame, orient = 'horizontal')
