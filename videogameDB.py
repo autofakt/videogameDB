@@ -369,38 +369,42 @@ def openBank(bankData, CID):
     userCIDValue_label = ttk.Label(win2, text=str(CID), background="light blue", font=("TkDefaultFont", 16))
     userCIDValue_label.grid(row=1, column=1, sticky=W, pady=10, padx=3)
 
+    # Listbox view
+    bankInfo_label = ttk.Label(win2,text="bid  cid  bank-name account-number              ", font=("TkDefaultFont", 10))
+    bankInfo_label.grid(row=2, column=0, columnspan=3)
+
     list_box = Listbox(win2, height=6, font="helvetica 13", bg="light gray")
-    list_box.grid(row=2, column=0, columnspan=2, sticky=W + E)
+    list_box.grid(row=3, column=0, columnspan=2, sticky=W + E)
 
     list_box.delete(0, 'end')
     for row in bankData:
         list_box.insert('end', row)
 
     bankName_label = ttk.Label(win2, text="Bank Name: ", background="light blue", font=("TkDefaultFont", 16))
-    bankName_label.grid(row=3, column=0, sticky=W, pady=10, padx=3)
+    bankName_label.grid(row=4, column=0, sticky=W, pady=10, padx=3)
 
     bankName_text = StringVar()
     bankName_input = ttk.Entry(win2, width=10, textvariable=bankName_text, font=("TkDefaultFont", 12))
-    bankName_input.grid(row=3, column=1, sticky=W)
+    bankName_input.grid(row=4, column=1, sticky=W)
 
     accountNumber_label = ttk.Label(win2, text="Account Number: ", background="light blue", font=("TkDefaultFont", 16))
-    accountNumber_label.grid(row=4, column=0, sticky=W, pady=10, padx=3)
+    accountNumber_label.grid(row=5, column=0, sticky=W, pady=10, padx=3)
 
     accountNumber_text = StringVar()
     accountNumber_input = ttk.Entry(win2, width=10, textvariable=accountNumber_text, font=("TkDefaultFont", 12))
-    accountNumber_input.grid(row=4, column=1, sticky=W)
+    accountNumber_input.grid(row=5, column=1, sticky=W)
 
 
 
     submit_btn = Button(win2, text="Add", bg="green", fg="white", font="helvetica 10 bold", command=lambda: bank_insert(win2,int(CID), bankName_text.get(), accountNumber_text.get()))
 
-    submit_btn.grid(row=5, column=1)
+    submit_btn.grid(row=6, column=1)
 
     bid_label = ttk.Label(win2, text="BID: ", background="light blue", font=("TkDefaultFont", 16))
-    bid_label.grid(row=6, column=0, sticky=W, pady=10, padx=3)
+    bid_label.grid(row=7, column=0, sticky=W, pady=10, padx=3)
 
     bid_combo = ttk.Combobox(win2, width=8, state="readonly", font=("TkDefaultFont", 12))
-    bid_combo.grid(row=6, column=1, sticky=W)
+    bid_combo.grid(row=7, column=1, sticky=W)
 
     values = []  #gets all the bid values and puts them into a combobox
     for x in bankData:
@@ -410,7 +414,7 @@ def openBank(bankData, CID):
     remove_btn = Button(win2, text="Remove", bg="red", fg="white", font="helvetica 10 bold",
                         command=lambda: bank_remove(win2, bid_combo.get()))
 
-    remove_btn.grid(row=7, column=1)
+    remove_btn.grid(row=8, column=1)
 
 
 def enableAdminButtons():
@@ -647,35 +651,44 @@ clr_btn.grid(row=2, column=8)
 add_btn = Button(root, text="Add Game", bg="blue", fg="white", font="helvetica 10 bold",state="disabled", command=add_game)
 add_btn.grid(row=2, column=9)
 
+#Listbox view
+gameInfo_label = ttk.Label(root, text="gid     title     platform    price  quantity                                ", background="light blue", font=("TkDefaultFont", 10))
+gameInfo_label.grid(row=3, column=0, columnspan = 3)
+
 #Item display with buttons
 list_box = Listbox(root, height=16, font="helvetica 13", bg="light gray")
-list_box.grid(row=3, column=0, columnspan=4, sticky=W + E)
+list_box.grid(row=4, column=0, columnspan=4,padx=5, pady=5, sticky=W + E)
 list_box.bind('<<ListboxSelect>>',get_selected_row)
 
 scroll_bar = Scrollbar(root)
-scroll_bar.grid(row=3, column=3)
+scroll_bar.grid(row=4, column=3)
 
 list_box.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.configure(command=list_box.yview)
 
 modify_btn = Button(root, text="Modify Record", bg="purple", fg="white", font="helvetica 10 bold", state="disabled", command=modifyGame)
-modify_btn.grid(row=4, column=2)
+modify_btn.grid(row=5, column=2)
 
 delete_btn = Button(root, text="Delete Record", bg="red", fg="white", font="helvetica 10 bold", state="disabled", command=delete_records)
-delete_btn.grid(row=4, column=3)
+delete_btn.grid(row=5, column=3)
 
 load_btn = Button(root, text="Load Records", bg="cornflowerblue", fg="white", font="helvetica 10 bold", command=view_records)
-load_btn.grid(row=4, column=0)
+load_btn.grid(row=5, column=0)
 
 clear_btn = Button(root, text="Clear Screen", bg="maroon", fg="white", font="helvetica 10 bold", command=clear_screen)
-clear_btn.grid(row=4, column=1, sticky=W)
+clear_btn.grid(row=5, column=1, sticky=W)
+
+
+#Listbox view cart
+cartInfo_label = ttk.Label(root, text="oid  gid  q  total                     ", background="light blue", font=("TkDefaultFont", 10))
+cartInfo_label.grid(row=3, column=6, columnspan = 3)
 
 # shopping cart area
 cartframe = Frame(root, bg="light blue", width=150, height = 200)
-cartframe.grid(row=3, column=5)
+cartframe.grid(row=4, column=5)
 
 shoppinglist_box = Listbox(root, height=12, font="helvetica 13", bg="light gray")
-shoppinglist_box.grid(row=3, column=6, columnspan=3, sticky= N +S)
+shoppinglist_box.grid(row=4, column=6, columnspan=3, sticky= N +S)
 #
 cart_label = ttk.Label(cartframe, text="CART", background="light blue", font=("TkDefaultFont", 16))
 cart_label.grid(row =0,column =0)
@@ -725,14 +738,18 @@ separator3 = Separator(cartframe, orient = 'horizontal')
 separator3.grid(row=9,column =0, columnspan =4, sticky=" ew", pady=10)
 
 purchase_btn = Button(root, text="PURCHASE", relief="raised", bd=6, bg="spring green", fg="black", font="helvetica 10 bold", state="disabled", command=purchaseCart)
-purchase_btn.grid(row=4, column=7)
+purchase_btn.grid(row=5, column=7)
+
+#Listbox view cart
+cartInfo_label = ttk.Label(root, text="hid cid bid gid q  price  order-total  date                               ", background="light blue", font=("TkDefaultFont", 10))
+cartInfo_label.grid(row=6, column=0, columnspan = 3)
 
 #purchase history
 purchaselist_box = Listbox(root, height=9, font="helvetica 13", bg="light gray")
-purchaselist_box.grid(row=5, column=0, columnspan=7,padx=5, pady=5, sticky= "E W")
+purchaselist_box.grid(row=7, column=0, columnspan=7,padx=5, pady=5, sticky= "E W")
 
 purchaseFrame = Frame(root, bg="light blue", width=80, height = 200)
-purchaseFrame.grid(row=5, column=7)
+purchaseFrame.grid(row=7, column=7)
 
 history_label = ttk.Label(purchaseFrame, text="History", background="light blue", font=("TkDefaultFont", 16))
 history_label.grid(row=0, column=0)
