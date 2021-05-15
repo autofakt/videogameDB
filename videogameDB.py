@@ -566,7 +566,7 @@ root = Tk()
 
 root.title("Video Game Pro")
 root.configure(background="light blue")
-root.geometry("950x650")
+root.geometry("1000x700")
 root.resizable(width=False, height=False)
 
 
