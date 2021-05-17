@@ -1,6 +1,3 @@
-
-
-
 from tkinter.ttk import Separator
 
 import mysql.connector
@@ -10,6 +7,7 @@ cnx = mysql.connector.connect(user='root', password='blue5555',
                               database='videogameDB')
 
 mycursor = cnx.cursor()
+
 '''
 creates table
 mycursor.execute("CREATE TABLE customers (name VARCHAR(255), address VARCHAR(255))")
@@ -76,6 +74,18 @@ class VideogameDB:
         self.cursor.execute(f"SELECT cid FROM customer WHERE username='{username}' and password='{password}';")
         rows = self.cursor.fetchall()
         return rows
+
+    def getGameQuantity(self,gid):
+        #print(f"user: {username} pass: {password}")
+        self.cursor.execute(f"SELECT quantity FROM games WHERE gid='{gid}';")
+        rows = self.cursor.fetchall()
+        return rows
+
+    def modifyNewGameQuantity(self,gid,newQuantity):
+        sql = (f"UPDATE games SET quantity = '{newQuantity}' WHERE gid = '{gid}';")
+        print(sql)
+        self.cursor.execute(sql)
+        self.con.commit()
 
     def insert(self,title,platform, price, quantity):
         sql = (f"INSERT INTO games (title,platform, price, quantity) VALUES ('{title}', '{platform}', {price}, {quantity});")
@@ -175,6 +185,15 @@ def getCartData():
     data = db.viewCart()
     return data
 
+def getGameQuantity(gid):
+    data = db.getGameQuantity(gid)
+    return data[0][0]
+
+def updateGameQuantity(gid, quantityOfItems):
+    oldQuantity = getGameQuantity(gid)
+    newQuantity = oldQuantity-quantityOfItems
+    db.modifyNewGameQuantity(gid, newQuantity)
+    cnx.commit()
 
 def add_game():
     if (title_text.get() == "" or platform_combo.get() == ""):
@@ -568,11 +587,17 @@ def purchaseCart():
         tempGID = row[1]
         tempQ = row[2]
         tempPrice = row[3]
+        updateGameQuantity(tempGID,tempQ)
         history_insert(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date)
         # print(str(row[1]) + str(row[3]))
     messagebox.showinfo(title="Video Game Pro", message="New History items added to database")
     view_history()
-    cartClear(False);
+    cartClear(False)
+    view_records()
+
+#def updateGameQuantity(gid, quantity):
+
+
 
 def history_insert(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date):
     db.insertHistory(CID,BID,tempGID, tempQ,tempPrice,cartTotal,date)
@@ -785,7 +810,6 @@ separatorP2.grid(row=4,column =0, columnspan =4, sticky="WE", pady=10)
 view_records()
 clearStartValues()
 cartClear(False)
-
 
 root.mainloop()
 
